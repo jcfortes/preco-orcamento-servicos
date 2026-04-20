@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -8,16 +8,27 @@ const regimes = ["MEI", "Simples Nacional", "Lucro Presumido", "Lucro Real"];
 const portes = ["MEI", "Microempresa", "Pequena Empresa", "Média Empresa", "Grande Empresa"];
 const origens = ["Redes Sociais", "Busca Google", "Indicação de Parceiro", "Indicação de Cliente", "Evento", "Outro"];
 
+type Segmento = { id: string; nome: string; pai_id: string | null };
+
 export default function NovoClientePage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [segmentos, setSegmentos] = useState<Segmento[]>([]);
+  const [segmentoPaiId, setSegmentoPaiId] = useState("");
   const [form, setForm] = useState({
     nome: "", endereco: "", cidade: "", estado: "", contato: "",
-    email: "", cnpj: "", inscricao_municipal: "", segmento: "",
+    email: "", cnpj: "", inscricao_municipal: "", segmento_id: "",
     regime_tributario: "", porte: "", origem: "",
   });
 
+  useEffect(() => {
+    supabase.from("segmentos").select("*").order("nome").then(({ data }) => setSegmentos(data || []));
+  }, []);
+
   const set = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
+
+  const pais = segmentos.filter((s) => !s.pai_id);
+  const filhos = segmentos.filter((s) => s.pai_id === segmentoPaiId);
 
   const salvar = async () => {
     if (!form.nome) return alert("Nome é obrigatório");
@@ -77,8 +88,18 @@ export default function NovoClientePage() {
           <h3 className="font-semibold text-slate-700 mb-4 pb-2 border-b">Classificação</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Segmento de Atividade</label>
-              <input className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Ex: Comércio, Indústria, Serviços..." value={form.segmento} onChange={(e) => set("segmento", e.target.value)} />
+              <label className="block text-sm font-medium text-slate-600 mb-1">Segmento (Nível 1)</label>
+              <select className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" value={segmentoPaiId} onChange={(e) => { setSegmentoPaiId(e.target.value); set("segmento_id", ""); }}>
+                <option value="">Selecione...</option>
+                {pais.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">Sub-segmento (Nível 2)</label>
+              <select className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" value={form.segmento_id} onChange={(e) => set("segmento_id", e.target.value)} disabled={!segmentoPaiId}>
+                <option value="">Selecione...</option>
+                {filhos.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1">Regime Tributário</label>

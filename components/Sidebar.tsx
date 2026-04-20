@@ -6,6 +6,7 @@ const links = [
   { href: "/", label: "Dashboard", icon: "📊" },
   { href: "/clientes", label: "Clientes", icon: "👥" },
   { href: "/servicos", label: "Serviços", icon: "🔧" },
+  { href: "/segmentos", label: "Segmentos", icon: "🏷️" },
   { href: "/precificacao", label: "Precificação", icon: "💰" },
 ];
 
